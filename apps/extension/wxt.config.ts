@@ -4,10 +4,10 @@ export default defineConfig({
   browser: 'chrome',
   manifest: {
     name: 'WXT Browser Extension',
-    description: 'Browser extension built with WXT and Vue',
+    description: 'Browser extension built with WXT',
     version: '1.0.0',
-    permissions: ['activeTab', 'storage'],
-    options_page: 'options.html',
+    permissions: ['storage'],
+    optional_permissions: ['activeTab'],
     action: {
       default_popup: 'popup.html',
       default_icon: {
@@ -17,5 +17,8 @@ export default defineConfig({
         '128': '/icon-128.png'
       }
     },
+    background: {
+      service_worker: 'background.js'
+    }
   },
 })
