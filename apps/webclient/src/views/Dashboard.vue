@@ -11,8 +11,8 @@
         <p class="stat-value">{{ version }}</p>
       </div>
       <div class="stat-card">
-        <h3>最后更新</h3>
-        <p class="stat-value">{{ timestamp }}</p>
+        <h3>浏览器扩展</h3>
+        <button @click="openExtension" class="extension-btn">打开扩展</button>
       </div>
     </div>
 
@@ -33,7 +33,7 @@ import { apiClient } from '../services/api'
 const status = ref('加载中...')
 const version = ref('-')
 const timestamp = ref('-')
-const logs = ref<Array<{ id: number; time: string; message: string }>>([])
+const extensionInstalled = ref(false)
 
 onMounted(async () => {
   try {
@@ -48,6 +48,17 @@ onMounted(async () => {
     console.error('Failed to fetch data:', error)
   }
 })
+
+function openExtension() {
+  // 尝试打开扩展的弹出窗口
+  // 使用 chrome.runtime API (仅在扩展上下文中可用)
+  if (typeof chrome !== 'undefined' && chrome.runtime?.openOptionsPage) {
+    chrome.runtime.openOptionsPage()
+  } else {
+    // 回退: 在新标签页中打开扩展管理页面
+    window.open('chrome://extensions', '_blank')
+  }
+}
 </script>
 
 <style scoped>
@@ -108,5 +119,19 @@ onMounted(async () => {
 .log-message {
   flex: 1;
   font-size: 14px;
+}
+
+.extension-btn {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.extension-btn:hover {
+  background: #1d4ed8;
 }
 </style>
