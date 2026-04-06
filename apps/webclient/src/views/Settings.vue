@@ -6,7 +6,7 @@
       <h3>服务器配置</h3>
       <div class="setting-item">
         <label>API 地址</label>
-        <input v-model="settings.apiUrl" type="text" placeholder="http://localhost:3001" />
+        <input v-model="settings.apiUrl" type="text" placeholder="http://localhost:3000" />
       </div>
       <div class="setting-item">
         <label>请求超时 (ms)</label>
@@ -37,7 +37,7 @@
 import { reactive } from 'vue'
 
 const settings = reactive({
-  apiUrl: 'http://localhost:3001',
+  apiUrl: 'http://localhost:3000',
   timeout: 5000,
   theme: 'light'
 })
@@ -48,7 +48,7 @@ function saveSettings() {
 }
 
 function resetSettings() {
-  settings.apiUrl = 'http://localhost:3001'
+  settings.apiUrl = 'http://localhost:3000'
   settings.timeout = 5000
   settings.theme = 'light'
 }

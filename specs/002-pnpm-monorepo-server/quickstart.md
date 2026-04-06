@@ -1,4 +1,4 @@
-# Quickstart: Pnpm Monorepo with Server and Browser Extension
+# Quickstart: Pnpm Monorepo with Server, Browser Extension and Web Client
 
 **Feature**: 002-pnpm-monorepo-server  
 **Date**: 2026/04/06
@@ -13,97 +13,58 @@
 ### 1. Initialize the monorepo
 
 ```bash
-# Create project directory
-mkdir my-monorepo && cd my-monorepo
+# Clone or create project directory
+cd wxt-browser-extensions
 
-# Initialize pnpm
-pnpm init
-
-# Create pnpm-workspace.yaml
-echo 'packages:
-  - "apps/*"
-  - "packages/*"' > pnpm-workspace.yaml
-```
-
-### 2. Create the server application
-
-```bash
-# Create apps directory structure
-mkdir -p apps/server/src
-
-# Create server package.json
-cat > apps/server/package.json << 'EOF'
-{
-  "name": "@myapp/server",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
-  }
-}
-EOF
-```
-
-### 3. Create the browser extension application
-
-```bash
-# Create extension directory structure
-mkdir -p apps/extension/src
-
-# Initialize WXT project in apps/extension
-cd apps/extension && pnpm create wxt . --template vue
-```
-
-### 4. Create shared packages
-
-```bash
-# Create packages directory
-mkdir -p packages/shared/src
-
-# Create shared package.json
-cat > packages/shared/package.json << 'EOF'
-{
-  "name": "@myapp/shared",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  }
-}
-EOF
-```
-
-### 5. Install dependencies
-
-```bash
-# From root directory
+# Install dependencies
 pnpm install
 ```
 
-## Running the Applications
+### 2. Applications Overview
 
-### Development mode (both apps)
+This monorepo contains four packages:
+
+| Package | Description | Port |
+|---------|-------------|------|
+| @wxt-ext/server | Hono API server | 3000 |
+| @wxt-ext/extension | WXT browser extension | - |
+| @wxt-ext/webclient | Vue SPA dashboard | 5173 |
+| @wxt-ext/shared | Shared types and utilities | - |
+
+### 3. Running the Applications
+
+#### Development mode
 
 ```bash
-# Run server (in one terminal)
-cd apps/server && pnpm dev
+# Run all applications in parallel
+pnpm dev
 
-# Run extension (in another terminal)
-cd apps/extension && pnpm dev
+# Or run individually
+pnpm dev:server   # http://localhost:3000
+pnpm dev:extension
+pnpm dev:webclient # http://localhost:5173
 ```
 
-### Build all packages
+#### Build all packages
 
 ```bash
-pnpm -r build
+pnpm build
 ```
+
+### 4. Browser Extension
+
+Load the extension in Chrome/Firefox:
+
+```bash
+# Build extension
+pnpm build:extension
+
+# The output is in apps/extension/.output/chrome-mv3/
+```
+
+### 5. Web Client
+
+Access the dashboard at http://localhost:5173
 
 ## Directory Structure
 
@@ -111,18 +72,33 @@ pnpm -r build
 .
 ├── pnpm-workspace.yaml
 ├── package.json
+├── tsconfig.base.json
 ├── apps/
-│   ├── server/
+│   ├── server/           # Hono API
 │   │   ├── src/
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   └── extension/
+│   │   │   ├── index.ts
+│   │   │   ├── config.ts
+│   │   │   ├── routes/
+│   │   │   └── middleware/
+│   │   └── package.json
+│   ├── extension/       # WXT
+│   │   ├── entrypoints/
+│   │   ├── wxt.config.ts
+│   │   └── package.json
+│   └── webclient/       # Vue SPA
 │       ├── src/
-│       ├── package.json
-│       └── wxt.config.ts
+│       │   ├── main.ts
+│       │   ├── App.vue
+│       │   ├── views/
+│       │   └── services/
+│       ├── vite.config.ts
+│       └── package.json
 └── packages/
-    └── shared/
+    └── shared/           # Shared code
         ├── src/
-        ├── package.json
-        └── tsconfig.json
+        │   ├── index.ts
+        │   ├── types.ts
+        │   ├── config.ts
+        │   └── api.ts
+        └── package.json
 ```
