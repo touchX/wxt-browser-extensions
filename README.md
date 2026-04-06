@@ -7,6 +7,11 @@
 - **@wxt-ext/webclient**: Vue SPA 管理仪表板 (端口 5173)
 - **@wxt-ext/shared**: 共享类型和工具
 
+## GitHub
+
+- **仓库**: https://github.com/touchX/wxt-browser-extensions
+- **PR**: https://github.com/touchX/wxt-browser-extensions/pull/1
+
 ## 快速开始
 
 ### 安装依赖
@@ -62,6 +67,22 @@ pnpm build:shared
 - WXT 0.19+ (浏览器扩展)
 - Vue 3.5 + Vite 6.x (Web Client)
 - Vitest (测试)
+
+## API 端点
+
+### Server (端口 3000)
+
+| 端点 | 方法 | 响应 |
+|------|------|------|
+| `/health` | GET | `{"status": "ok"}` |
+| `/api/status` | GET | `{"version": "1.0.0", "timestamp": "..."}` |
+
+## 分支
+
+| 分支 | 说明 |
+|------|------|
+| `main` | 主分支 (稳定版) |
+| `002-pnpm-monorepo-server` | Monorepo 实现 (已合并 PR #1) |
 
 ## 许可证
 
