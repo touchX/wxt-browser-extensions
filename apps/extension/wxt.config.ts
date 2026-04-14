@@ -4,18 +4,20 @@ export default defineConfig({
   browser: 'chrome',
   manifest: {
     name: 'WXT Browser Extension',
+    short_name: 'WXT',
     description: 'Browser extension built with WXT',
     version: '1.0.0',
-    permissions: ['storage'],
+    permissions: ['storage', 'scripting'],
     optional_permissions: ['activeTab'],
+    host_permissions: [
+      'http://127.0.0.1/*',
+      'http://localhost/*',
+      'http://gzkq.aitmc.cn/*',
+      'http://10.254.8.163/*'
+    ],
     action: {
       default_popup: 'popup.html',
-      default_icon: {
-        '16': '/icon-16.png',
-        '32': '/icon-32.png',
-        '48': '/icon-48.png',
-        '128': '/icon-128.png'
-      }
+      default_title: 'WXT Extension'
     },
     background: {
       service_worker: 'background.js'

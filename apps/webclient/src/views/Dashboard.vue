@@ -18,6 +18,7 @@
 
     <h2>操作日志</h2>
     <div class="logs-section">
+      <div v-if="!logs.length" class="no-logs">暂无日志</div>
       <div v-for="log in logs" :key="log.id" class="log-entry">
         <span class="log-time">{{ log.time }}</span>
         <span class="log-message">{{ log.message }}</span>
@@ -30,12 +31,25 @@
 import { ref, onMounted } from 'vue'
 import { apiClient } from '../services/api'
 
+// 定义 emit 事件
+const emit = defineEmits<{
+  (e: 'refresh-data'): void
+  (e: 'open-settings'): void
+  (e: 'sync-state'): void
+}>()
+
 const status = ref('加载中...')
 const version = ref('-')
 const timestamp = ref('-')
 const extensionInstalled = ref(false)
+const logs = ref<Array<{id: number; time: string; message: string}>>([])
+const isLoading = ref(false)
 
-onMounted(async () => {
+// 刷新数据方法 - 供外部调用
+async function refreshData() {
+  isLoading.value = true
+  status.value = '刷新中...'
+
   try {
     const health = await apiClient.get('/health')
     status.value = health.status === 'ok' ? '运行正常' : '异常'
@@ -43,20 +57,35 @@ onMounted(async () => {
     const statusData = await apiClient.get('/api/status')
     version.value = statusData.version
     timestamp.value = new Date(statusData.timestamp).toLocaleString('zh-CN')
+
+    // 模拟日志数据
+    logs.value = [
+      { id: Date.now(), time: new Date().toLocaleString('zh-CN'), message: '数据已刷新' },
+      ...logs.value
+    ].slice(0, 10)
   } catch (error) {
     status.value = '连接失败'
     console.error('Failed to fetch data:', error)
+  } finally {
+    isLoading.value = false
   }
+}
+
+// 暴露方法供父组件调用
+defineExpose({
+  refreshData
+})
+
+onMounted(async () => {
+  await refreshData()
 })
 
 function openExtension() {
-  // 尝试打开扩展的弹出窗口
-  // 使用 chrome.runtime API (仅在扩展上下文中可用)
-  if (typeof chrome !== 'undefined' && chrome.runtime?.openOptionsPage) {
-    chrome.runtime.openOptionsPage()
+  const win = window as Window & { chrome?: typeof window.chrome }
+  if (win.chrome?.runtime?.openOptionsPage) {
+    win.chrome.runtime.openOptionsPage()
   } else {
-    // 回退: 在新标签页中打开扩展管理页面
-    window.open('chrome://extensions', '_blank')
+    alert('请在浏览器地址栏输入 chrome://extensions 打开扩展管理页面')
   }
 }
 </script>
@@ -98,6 +127,13 @@ function openExtension() {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 16px;
+  min-height: 100px;
+}
+
+.no-logs {
+  color: #9ca3af;
+  text-align: center;
+  padding: 20px;
 }
 
 .log-entry {
