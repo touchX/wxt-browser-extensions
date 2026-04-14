@@ -45,5 +45,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Claude
+.claude/
+
 # OS
 Thumbs.db
