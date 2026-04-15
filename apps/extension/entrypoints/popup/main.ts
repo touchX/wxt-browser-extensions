@@ -1,23 +1,5 @@
 // Popup main script - 健康体检数据展示
 
-interface HealthData {
-  name: string
-  gender: string
-  age: string
-  regNo: string
-  idCard: string
-  checkDate: string
-  height: string
-  weight: string
-  waist: string
-  leftSystolic: string
-  leftDiastolic: string
-  rightSystolic: string
-  rightDiastolic: string
-  pulseRate: string
-  fastingGlucose: string
-}
-
 // getPatientDataByCondition 返回的记录结构
 interface PatientConditionItem {
   checkDate: string
@@ -31,6 +13,9 @@ interface PatientConditionItem {
   pulse: number
   fbs: number
 }
+
+// 内存中的健康数据（popup关闭即清空）
+let fetchedHealthData: PatientConditionItem | null = null
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -193,6 +178,9 @@ async function fetchUserDataFromServer() {
     // 取最新一条数据，填入各 Tab 面板
     const latest = json.data[0]
 
+    // 保存到内存（popup关闭即清空）
+    fetchedHealthData = latest
+
     // 基础信息面板：身份证号 / 身高 / 体重 / 腰围
     setFieldValue('idCard', latest.idcard)
     setFieldValue('height', latest.height)
@@ -208,26 +196,6 @@ async function fetchUserDataFromServer() {
 
     // 血糖面板
     setFieldValue('fastingGlucose', latest.fbs)
-
-    // 保存到 storage
-    const healthData: HealthData = {
-      name: name || '',
-      gender: gender || '',
-      age: ageEl || '',
-      regNo: extractedPatientInfo.regNo || '',
-      idCard: latest.idcard,
-      checkDate: latest.checkDate,
-      height: String(latest.height),
-      weight: String(latest.weight),
-      waist: String(latest.waistline),
-      leftSystolic: String(latest.sbp),
-      leftDiastolic: String(latest.dbp),
-      rightSystolic: '',
-      rightDiastolic: '',
-      pulseRate: String(latest.pulse),
-      fastingGlucose: String(latest.fbs),
-    }
-    await browser.storage.sync.set({ healthData })
 
     showToast(`获取成功：${latest.checkDate}，血糖 ${latest.fbs} mmol/L`, 'success')
   } catch (error) {
@@ -314,17 +282,57 @@ async function insertDataToPage() {
   const btn = document.getElementById('btnShowData')!
   btn.classList.add('loading')
   try {
+    // 检查是否有获取的患者数据
+    if (!fetchedHealthData) {
+      showToast('无患者数据，请先点击"获取患者数据"', 'error')
+      return
+    }
+
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
     if (!tab?.id) {
       showToast('无法获取当前标签页', 'error')
       return
     }
 
-    // 从 storage 读取健康数据
-    const result = await browser.storage.sync.get('healthData')
-    const data = (result as Record<string, HealthData>).healthData
-    if (!data) {
-      showToast('无存储数据，请先点击"获取患者数据"', 'error')
+    // 先获取当前页面患者姓名，与获取的数据进行比对
+    const pageInfo = await browser.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        function findById(root: Document, targetId: string): string | null {
+          const el = root.getElementById(targetId)
+          if (el) return (el as HTMLInputElement).value || el.textContent?.trim() || el.innerText?.trim() || null
+
+          const iframes = root.querySelectorAll('iframe')
+          for (let i = 0; i < iframes.length; i++) {
+            try {
+              const doc = iframes[i].contentDocument || (iframes[i].contentWindow as any)?.document
+              if (doc) {
+                const found = findById(doc, targetId)
+                if (found) return found
+              }
+            } catch {
+              // 跨域 iframe 无法访问
+            }
+          }
+          return null
+        }
+        return {
+          name: findById(document, 'patName'),
+        }
+      },
+    })
+
+    const pageData = pageInfo?.[0]?.result as { name?: string } | undefined
+    const pageName = pageData?.name?.trim()
+
+    if (!pageName) {
+      showToast('无法获取页面患者姓名', 'error')
+      return
+    }
+
+    // 比对姓名是否一致
+    if (pageName !== fetchedHealthData.name) {
+      showToast(`患者姓名不匹配：页面"${pageName}"，数据"${fetchedHealthData.name}"`, 'error')
       return
     }
 
@@ -383,30 +391,39 @@ async function insertDataToPage() {
         }
 
         // ItemCode → 字段值映射（ID = episodeId||1^1||ItemCode）
-        const itemCodes: Record<string, string> = {
+        const itemCodes: Record<string, number | undefined> = {
           '22': fields.height,    // 身高
           '21': fields.weight,    // 体重
-          '24': fields.leftSystolic,  // 收缩压
-          '25': fields.leftDiastolic,  // 舒张压
-          '32': fields.pulseRate,     // 脉率
+          '24': fields.sbp,      // 收缩压
+          '25': fields.dbp,      // 舒张压
+          '32': fields.pulse,    // 脉率
         }
 
         let filled = 0
         for (const [itemCode, value] of Object.entries(itemCodes)) {
-          if (!value) continue
+          if (value == null) continue
           const taId = episodeId + '||1^1||' + itemCode
           const ta = targetDoc.getElementById(taId) as HTMLTextAreaElement | null
           if (ta) {
-            ta.value = value
+            ta.value = String(value)
             ta.dispatchEvent(new Event('input', { bubbles: true }))
             ta.dispatchEvent(new Event('change', { bubbles: true }))
+            // 高亮填充的字段
+            ta.style.backgroundColor = '#fef08a'
+            ta.style.borderColor = '#f59e0b'
+            ta.style.transition = 'background-color 0.3s ease'
+            // 2秒后消退高亮
+            setTimeout(() => {
+              ta.style.backgroundColor = ''
+              ta.style.borderColor = ''
+            }, 2000)
             filled++
           }
         }
 
         return { filled, total: 5 }
       },
-      args: [data],
+      args: [fetchedHealthData],
     })
 
     const outcome = outcomes?.[0]?.result as { filled: number; total: number; error?: string } | undefined
