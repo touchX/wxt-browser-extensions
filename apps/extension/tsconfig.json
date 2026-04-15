@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./.output",
+    "rootDir": "./entrypoints",
+    "composite": true,
+    "types": ["wxt/vite-builder"]
+  },
+  "include": ["entrypoints/**/*", "wxt.config.ts"],
+  "references": [
+    { "path": "../../packages/shared" }
+  ]
+}
